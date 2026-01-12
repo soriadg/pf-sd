@@ -1,0 +1,10 @@
+**/target/
+*.log
+hs_err_pid*.log
+logs/
+run-logs/
+run-pids/
+**/audit-buffer/
+.idea/
+.vscode/
+.DS_Store
