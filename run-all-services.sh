@@ -5,6 +5,12 @@
 
 BASE_DIR=$(pwd)
 LOGS_DIR="$BASE_DIR/logs"
+AUTH_PORT="${AUTH_PORT:-8081}"
+ACCOUNT_PORT="${ACCOUNT_PORT:-8080}"
+REPORT_PORT="${REPORT_PORT:-8084}"
+WEB_PORT="${WEB_PORT:-8085}"
+TRANSACTION_PORT="${TRANSACTION_PORT:-8083}"
+PROXY_PORT="${PROXY_PORT:-5432}"
 
 # Crear directorio de logs
 mkdir -p "$LOGS_DIR"
@@ -23,8 +29,16 @@ start_service() {
 
     echo ">>> Iniciando $name (puerto $port)..."
 
+    local extra_env=()
+    if [[ "$port" =~ ^[0-9]+$ ]]; then
+        extra_env+=("SERVER_PORT=$port")
+    fi
+    if [ "$name" = "transaction-service" ] || [ "$name" = "audit-service" ]; then
+        extra_env+=("SPRING_MAIN_WEB_APPLICATION_TYPE=none")
+    fi
+
     cd "$dir"
-    nohup java -jar "$jar" > "$LOGS_DIR/$name.log" 2>&1 &
+    nohup env "${extra_env[@]}" java -jar "$jar" > "$LOGS_DIR/$name.log" 2>&1 &
     local pid=$!
     echo $pid > "$LOGS_DIR/$name.pid"
 
@@ -35,11 +49,11 @@ start_service() {
 }
 
 # IMPORTANTE: Verificar que Cloud SQL Proxy esté corriendo
-if ! lsof -i :5432 > /dev/null 2>&1; then
-    echo "⚠️  ADVERTENCIA: Cloud SQL Proxy NO está corriendo en puerto 5432"
+if ! lsof -i :"$PROXY_PORT" > /dev/null 2>&1; then
+    echo "⚠️  ADVERTENCIA: Cloud SQL Proxy NO está corriendo en puerto $PROXY_PORT"
     echo ""
     echo "Para iniciar Cloud SQL Proxy, ejecuta en otra terminal:"
-    echo "  ./cloud-sql-proxy --port 5432 sistemafinancierodistribuido:us-central1:sfd-db"
+    echo "  ./cloud-sql-proxy --port $PROXY_PORT sistemafinancierodistribuido:us-central1:sfd-db"
     echo ""
     read -p "¿Continuar de todos modos? (y/n): " -n 1 -r
     echo
@@ -52,21 +66,21 @@ fi
 start_service "auth-service" \
     "$BASE_DIR/auth-service" \
     "target/auth-service-0.0.1-SNAPSHOT.jar" \
-    8081
+    "$AUTH_PORT"
 
 sleep 2
 
 start_service "account-service" \
     "$BASE_DIR/account-service" \
     "target/account-service-0.0.1-SNAPSHOT.jar" \
-    8080
+    "$ACCOUNT_PORT"
 
 sleep 2
 
 start_service "transaction-service" \
     "$BASE_DIR/transaction-service" \
     "target/transaction-service-0.0.1-SNAPSHOT.jar" \
-    8083
+    "$TRANSACTION_PORT"
 
 sleep 2
 
@@ -80,14 +94,14 @@ sleep 2
 start_service "report-service" \
     "$BASE_DIR/report-service/report-service" \
     "target/report-service-0.0.1-SNAPSHOT.jar" \
-    8084
+    "$REPORT_PORT"
 
 sleep 2
 
 start_service "web-interface" \
     "$BASE_DIR/web-interface" \
     "target/web-interface-0.0.1-SNAPSHOT.jar" \
-    8085
+    "$WEB_PORT"
 
 echo ""
 echo "=============================================="
@@ -100,7 +114,7 @@ sleep 10
 echo "Verificando servicios..."
 echo ""
 
-for port in 8080 8081 8084 8085; do
+for port in "$ACCOUNT_PORT" "$AUTH_PORT" "$REPORT_PORT" "$WEB_PORT"; do
     echo -n "Puerto $port: "
     if lsof -i :$port > /dev/null 2>&1; then
         echo "✓ ACTIVO"
@@ -115,8 +129,8 @@ echo "  SERVICIOS INICIADOS"
 echo "=============================================="
 echo ""
 echo "URLs disponibles:"
-echo "  - Interfaz Usuario: http://localhost:8085/index.html"
-echo "  - Panel Admin:      http://localhost:8085/admin.html"
+echo "  - Interfaz Usuario: http://localhost:${WEB_PORT}/index.html"
+echo "  - Panel Admin:      http://localhost:${WEB_PORT}/admin.html"
 echo ""
 echo "Ver logs en tiempo real:"
 echo "  tail -f logs/web-interface.log"
