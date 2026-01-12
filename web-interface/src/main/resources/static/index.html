@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Financiero - Usuario</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Login/Register Section -->
+        <div id="auth-section" class="section">
+            <div class="card">
+                <h1>Sistema de Dinero Electrónico</h1>
+
+                <!-- Login Form -->
+                <div id="login-form" class="form-container">
+                    <h2>Iniciar Sesión</h2>
+                    <form onsubmit="login(event)">
+                        <div class="form-group">
+                            <label>CURP:</label>
+                            <input type="text" id="login-curp" required maxlength="18" pattern="[A-Z0-9]{18}"
+                                   placeholder="CURP (18 caracteres)" style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña:</label>
+                            <input type="password" id="login-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Ingresar</button>
+                        <p class="toggle-link">¿No tienes cuenta? <a href="#" onclick="showRegister()">Regístrate</a></p>
+                    </form>
+                </div>
+
+                <!-- Register Form -->
+                <div id="register-form" class="form-container" style="display: none;">
+                    <h2>Registrarse</h2>
+                    <form onsubmit="register(event)">
+                        <div class="form-group">
+                            <label>CURP:</label>
+                            <input type="text" id="register-curp" required maxlength="18" pattern="[A-Z0-9]{18}"
+                                   placeholder="CURP (18 caracteres)" style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña:</label>
+                            <input type="password" id="register-password" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label>Confirmar Contraseña:</label>
+                            <input type="password" id="register-password-confirm" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Registrar</button>
+                        <p class="toggle-link">¿Ya tienes cuenta? <a href="#" onclick="showLogin()">Inicia sesión</a></p>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="section" style="display: none;">
+            <nav class="navbar">
+                <h1>Mi Cuenta</h1>
+                <div class="user-info">
+                    <span id="user-curp"></span>
+                    <button onclick="logout()" class="btn btn-secondary">Cerrar Sesión</button>
+                </div>
+            </nav>
+
+            <div class="dashboard">
+                <!-- Balance Cards -->
+                <div class="balance-section">
+                    <div class="balance-card">
+                        <h3>Saldo en Banco</h3>
+                        <p class="balance" id="saldo-banco">$0.00</p>
+                    </div>
+                    <div class="balance-card">
+                        <h3>Saldo en Billetera</h3>
+                        <p class="balance" id="saldo-billetera">$0.00</p>
+                    </div>
+                    <div class="balance-card total">
+                        <h3>Saldo Total</h3>
+                        <p class="balance" id="saldo-total">$0.00</p>
+                    </div>
+                </div>
+
+                <!-- Operations -->
+                <div class="operations-section">
+                    <div class="card">
+                        <h2>Operaciones</h2>
+                        <div class="tabs">
+                            <button class="tab-btn active" onclick="showTab('deposit')">Depositar</button>
+                            <button class="tab-btn" onclick="showTab('withdraw')">Retirar</button>
+                            <button class="tab-btn" onclick="showTab('transfer')">Transferir</button>
+                        </div>
+
+                        <!-- Deposit Tab -->
+                        <div id="deposit-tab" class="tab-content active">
+                            <h3>Depositar (Banco → Billetera)</h3>
+                            <form onsubmit="deposit(event)">
+                                <div class="form-group">
+                                    <label>Monto:</label>
+                                    <input type="number" id="deposit-amount" step="0.01" min="0.01" required>
+                                </div>
+                                <button type="submit" class="btn btn-success">Depositar</button>
+                            </form>
+                        </div>
+
+                        <!-- Withdraw Tab -->
+                        <div id="withdraw-tab" class="tab-content">
+                            <h3>Retirar (Billetera → Banco)</h3>
+                            <form onsubmit="withdraw(event)">
+                                <div class="form-group">
+                                    <label>Monto:</label>
+                                    <input type="number" id="withdraw-amount" step="0.01" min="0.01" required>
+                                </div>
+                                <button type="submit" class="btn btn-warning">Retirar</button>
+                            </form>
+                        </div>
+
+                        <!-- Transfer Tab -->
+                        <div id="transfer-tab" class="tab-content">
+                            <h3>Transferir a Otro Usuario</h3>
+                            <form onsubmit="transfer(event)">
+                                <div class="form-group">
+                                    <label>CURP Destino:</label>
+                                    <input type="text" id="transfer-curp" required maxlength="18" pattern="[A-Z0-9]{18}"
+                                           style="text-transform: uppercase;">
+                                </div>
+                                <div class="form-group">
+                                    <label>Monto:</label>
+                                    <input type="number" id="transfer-amount" step="0.01" min="0.01" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Transferir</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction History -->
+                <div class="history-section">
+                    <div class="card">
+                        <h2>Historial de Transacciones</h2>
+                        <button onclick="loadTransactions()" class="btn btn-secondary">Actualizar</button>
+                        <div id="transactions-list" class="transactions-list">
+                            <p class="no-data">No hay transacciones</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Notification -->
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
