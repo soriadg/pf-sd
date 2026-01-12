@@ -8,6 +8,13 @@ echo "  VERIFICACIÓN DE SERVICIOS"
 echo "=============================================="
 echo ""
 
+AUTH_PORT="${AUTH_PORT:-8081}"
+ACCOUNT_PORT="${ACCOUNT_PORT:-8080}"
+REPORT_PORT="${REPORT_PORT:-8084}"
+WEB_PORT="${WEB_PORT:-8085}"
+PROXY_PORT="${PROXY_PORT:-5432}"
+TRANSACTION_PORT="${TRANSACTION_PORT:-8083}"
+
 check_service() {
     local name=$1
     local url=$2
@@ -25,10 +32,10 @@ check_service() {
 }
 
 # Verificar servicios HTTP
-check_service "AuthService" "http://localhost:8081/auth/verify" "8081"
-check_service "AccountService" "http://localhost:8080/account/balance" "8080"
-check_service "ReportService" "http://localhost:8084/reports/health" "8084"
-check_service "WebInterface" "http://localhost:8085/" "8085"
+check_service "AuthService" "http://localhost:${AUTH_PORT}/auth/verify" "$AUTH_PORT"
+check_service "AccountService" "http://localhost:${ACCOUNT_PORT}/account/balance" "$ACCOUNT_PORT"
+check_service "ReportService" "http://localhost:${REPORT_PORT}/reports/health" "$REPORT_PORT"
+check_service "WebInterface" "http://localhost:${WEB_PORT}/" "$WEB_PORT"
 
 echo ""
 echo "Nota: TransactionService y AuditService no exponen HTTP"
@@ -41,7 +48,7 @@ echo "  PUERTOS EN USO"
 echo "=============================================="
 echo ""
 
-for port in 5433 8080 8081 8083 8084 8085; do
+for port in "$PROXY_PORT" "$ACCOUNT_PORT" "$AUTH_PORT" "$TRANSACTION_PORT" "$REPORT_PORT" "$WEB_PORT"; do
     echo -n "Puerto $port: "
     if lsof -i :$port > /dev/null 2>&1; then
         echo "✓ EN USO"
@@ -52,6 +59,6 @@ done
 
 echo ""
 echo "URLs de las interfaces:"
-echo "  - Usuario: http://localhost:8085/index.html"
-echo "  - Admin: http://localhost:8085/admin.html"
+echo "  - Usuario: http://localhost:${WEB_PORT}/index.html"
+echo "  - Admin: http://localhost:${WEB_PORT}/admin.html"
 echo ""

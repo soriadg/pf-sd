@@ -44,20 +44,31 @@ for service in "${services[@]}"; do
 done
 
 # Compilar servicios adicionales en raíz
-for service in "transaction-service" "report-service"; do
-    echo ""
-    echo ">>> Compilando $service..."
-    cd "$BASE_DIR/$service"
+echo ""
+echo ">>> Compilando transaction-service..."
+cd "$BASE_DIR/transaction-service"
 
-    mvn clean package -DskipTests
+mvn clean package -DskipTests
 
-    if [ $? -eq 0 ]; then
-        echo "✓ $service compilado exitosamente"
-    else
-        echo "✗ Error compilando $service"
-        exit 1
-    fi
-done
+if [ $? -eq 0 ]; then
+    echo "✓ transaction-service compilado exitosamente"
+else
+    echo "✗ Error compilando transaction-service"
+    exit 1
+fi
+
+echo ""
+echo ">>> Compilando report-service..."
+cd "$BASE_DIR/report-service/report-service"
+
+mvn clean package -DskipTests
+
+if [ $? -eq 0 ]; then
+    echo "✓ report-service compilado exitosamente"
+else
+    echo "✗ Error compilando report-service"
+    exit 1
+fi
 
 cd "$BASE_DIR"
 
@@ -70,7 +81,7 @@ echo "Para ejecutar los servicios, usar los siguientes comandos"
 echo "en terminales separadas:"
 echo ""
 echo "1. Cloud SQL Proxy:"
-echo "   ./cloud-sql-proxy --port 5433 sistemafinancierodistribuido:us-central1:sfd-db"
+echo "   ./cloud-sql-proxy --port 5432 sistemafinancierodistribuido:us-central1:sfd-db"
 echo ""
 echo "2. AuthService:"
 echo "   cd auth-service && java -jar target/auth-service-0.0.1-SNAPSHOT.jar"
@@ -85,7 +96,7 @@ echo "5. AuditService:"
 echo "   cd audit-service && java -jar target/audit-service-0.0.1-SNAPSHOT.jar"
 echo ""
 echo "6. ReportService:"
-echo "   cd report-service && java -jar target/report-service-0.0.1-SNAPSHOT.jar"
+echo "   cd report-service/report-service && java -jar target/report-service-0.0.1-SNAPSHOT.jar"
 echo ""
 echo "7. WebInterface:"
 echo "   cd web-interface && java -jar target/web-interface-0.0.1-SNAPSHOT.jar"

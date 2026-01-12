@@ -1,6 +1,7 @@
 // Configuration
-const API_BASE_URL = 'http://localhost:8080'; // AccountService
-const AUTH_BASE_URL = 'http://localhost:8081'; // AuthService
+const runtimeConfig = window.__CONFIG__ || {};
+const API_BASE_URL = runtimeConfig.ACCOUNT_BASE_URL || 'http://localhost:8080'; // AccountService
+const AUTH_BASE_URL = runtimeConfig.AUTH_BASE_URL || 'http://localhost:8081'; // AuthService
 
 // State
 let token = localStorage.getItem('token');

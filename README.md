@@ -51,7 +51,7 @@ Sistema distribuido de dinero electrónico implementado con microservicios REST 
 
 ```bash
 # Cloud SQL Proxy
-./cloud-sql-proxy --port 5433 sistemafinancierodistribuido:us-central1:sfd-db
+./cloud-sql-proxy --port 5432 sistemafinancierodistribuido:us-central1:sfd-db
 
 # Crear tópicos Pub/Sub
 gcloud pubsub topics create tx-events tx-confirmed
@@ -62,23 +62,23 @@ gcloud pubsub subscriptions create tx-confirmed-audit-sub --topic=tx-confirmed
 ### 3. Compilar Todo
 
 ```bash
-cd PFinal
+cd /ruta/a/PF_SD
 
 # Compilar cada servicio
 for dir in auth-service account-service audit-service web-interface client-simulator cpu-monitor; do
     cd $dir && mvn clean package -DskipTests && cd ..
 done
 
-# Servicios en "New folder"
-cd "New folder/transaction-service" && mvn clean package -DskipTests && cd ../..
-cd "New folder/report-service" && mvn clean package -DskipTests && cd ../..
+# Servicios adicionales
+cd transaction-service && mvn clean package -DskipTests && cd ..
+cd report-service/report-service && mvn clean package -DskipTests && cd ../..
 ```
 
 ### 4. Ejecutar Servicios (en terminales separadas)
 
 ```bash
 # Terminal 1: Cloud SQL Proxy
-./cloud-sql-proxy --port 5433 sistemafinancierodistribuido:us-central1:sfd-db
+./cloud-sql-proxy --port 5432 sistemafinancierodistribuido:us-central1:sfd-db
 
 # Terminal 2: AuthService
 cd auth-service && java -jar target/auth-service-*.jar
@@ -87,13 +87,13 @@ cd auth-service && java -jar target/auth-service-*.jar
 cd account-service && java -jar target/account-service-*.jar
 
 # Terminal 4: TransactionService
-cd "New folder/transaction-service" && java -jar target/transaction-service-*.jar
+cd transaction-service && java -jar target/transaction-service-*.jar
 
 # Terminal 5: AuditService
 cd audit-service && java -jar target/audit-service-*.jar
 
 # Terminal 6: ReportService
-cd "New folder/report-service" && java -jar target/report-service-*.jar
+cd report-service/report-service && java -jar target/report-service-*.jar
 
 # Terminal 7: WebInterface
 cd web-interface && java -jar target/web-interface-*.jar
@@ -103,6 +103,10 @@ cd web-interface && java -jar target/web-interface-*.jar
 
 - **Usuario:** http://localhost:8085/index.html
 - **Administrador:** http://localhost:8085/admin.html
+
+**Nota (GCP):** en `web-interface` puedes configurar las URLs de los APIs con
+`APP_ACCOUNT_BASE_URL`, `APP_AUTH_BASE_URL` y `APP_REPORT_BASE_URL`. En `auth-service`,
+usa `APP_CORS_ALLOWED_ORIGINS` con la URL pública del frontend.
 
 ### 6. Ejecutar Simulador
 
@@ -123,7 +127,7 @@ java -jar target/cpu-monitor-1.0.0.jar 5
 ## Estructura del Proyecto
 
 ```
-PFinal/
+PF_SD/
 ├── INSTRUCCIONES.md              # Documentación completa
 ├── README.md                     # Este archivo
 ├── schema.sql                    # Esquema de base de datos
@@ -137,9 +141,9 @@ PFinal/
 │       ├── admin.html           # Panel administrador
 │       ├── css/                 # Estilos
 │       └── js/                  # Lógica frontend
-├── New folder/
-│   ├── transaction-service/     # Versión con subscribers Pub/Sub
-│   └── report-service/          # APIs de reportes
+├── report-service/
+│   ├── report-service/          # APIs de reportes
+│   └── transaction-service/     # Copia legacy (no usar)
 ├── client-simulator/            # Simulador de clientes
 └── cpu-monitor/                 # Monitor TUI con Lanterna
 ```
@@ -188,7 +192,7 @@ PFinal/
 
 ```bash
 # Monitorear saldo total (debe mantenerse constante)
-watch -n 5 "psql 'host=127.0.0.1 port=5433 dbname=sfd user=app_user' \
+watch -n 5 "psql 'host=127.0.0.1 port=5432 dbname=sfd user=app_user' \
   -c 'SELECT SUM(saldo_banco + saldo_billetera) FROM cuentas;'"
 ```
 

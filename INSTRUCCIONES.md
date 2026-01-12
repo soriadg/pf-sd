@@ -101,17 +101,17 @@ curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/clou
 chmod +x cloud-sql-proxy
 
 # Ejecutar proxy (en terminal separada)
-./cloud-sql-proxy --port 5433 sistemafinancierodistribuido:us-central1:sfd-db
+./cloud-sql-proxy --port 5432 sistemafinancierodistribuido:us-central1:sfd-db
 ```
 
 #### 5. Inicializar Base de Datos
 
 ```bash
 # Conectarse a la base de datos a través del proxy
-psql "host=127.0.0.1 port=5433 sslmode=disable dbname=sfd user=app_user"
+psql "host=127.0.0.1 port=5432 sslmode=disable dbname=sfd user=app_user"
 
 # Ejecutar el script schema.sql
-\i /ruta/a/PFinal/schema.sql
+\i /ruta/a/PF_SD/schema.sql
 ```
 
 #### 6. Configurar Google Cloud Pub/Sub
@@ -134,7 +134,7 @@ gcloud auth application-default login
 ### 1. Compilar todos los microservicios
 
 ```bash
-cd /home/soriadg/Documentos/PFsistemasDistribuidos/PFinal
+cd /ruta/a/PF_SD
 
 # AuthService
 cd auth-service
@@ -146,18 +146,18 @@ cd account-service
 mvn clean package -DskipTests
 cd ..
 
-# TransactionService (en New folder)
-cd "New folder/transaction-service"
+# TransactionService
+cd "transaction-service"
 mvn clean package -DskipTests
-cd ../..
+cd ..
 
 # AuditService
 cd audit-service
 mvn clean package -DskipTests
 cd ..
 
-# ReportService (en New folder)
-cd "New folder/report-service"
+# ReportService
+cd "report-service/report-service"
 mvn clean package -DskipTests
 cd ../..
 
@@ -186,14 +186,14 @@ Es importante iniciar los servicios en el siguiente orden para evitar problemas 
 #### 1. Cloud SQL Proxy (Terminal 1)
 
 ```bash
-cd /home/soriadg/Documentos/PFsistemasDistribuidos/PFinal
-./cloud-sql-proxy --port 5433 sistemafinancierodistribuido:us-central1:sfd-db
+cd /ruta/a/PF_SD
+./cloud-sql-proxy --port 5432 sistemafinancierodistribuido:us-central1:sfd-db
 ```
 
 #### 2. AuthService (Terminal 2)
 
 ```bash
-cd /home/soriadg/Documentos/PFsistemasDistribuidos/PFinal/auth-service
+cd /ruta/a/PF_SD/auth-service
 java -jar target/auth-service-0.0.1-SNAPSHOT.jar
 ```
 
@@ -202,7 +202,7 @@ Debería iniciar en: **http://localhost:8081**
 #### 3. AccountService (Terminal 3)
 
 ```bash
-cd /home/soriadg/Documentos/PFsistemasDistribuidos/PFinal/account-service
+cd /ruta/a/PF_SD/account-service
 java -jar target/account-service-0.0.1-SNAPSHOT.jar
 ```
 
@@ -211,7 +211,7 @@ Debería iniciar en: **http://localhost:8080**
 #### 4. TransactionService (Terminal 4)
 
 ```bash
-cd "/home/soriadg/Documentos/PFsistemasDistribuidos/PFinal/New folder/transaction-service"
+cd "/ruta/a/PF_SD/transaction-service"
 java -jar target/transaction-service-0.0.1-SNAPSHOT.jar
 ```
 
@@ -220,7 +220,7 @@ Este servicio NO expone puerto HTTP (solo consume Pub/Sub)
 #### 5. AuditService (Terminal 5)
 
 ```bash
-cd /home/soriadg/Documentos/PFsistemasDistribuidos/PFinal/audit-service
+cd /ruta/a/PF_SD/audit-service
 java -jar target/audit-service-0.0.1-SNAPSHOT.jar
 ```
 
@@ -229,7 +229,7 @@ Este servicio NO expone puerto HTTP (solo consume Pub/Sub)
 #### 6. ReportService (Terminal 6)
 
 ```bash
-cd "/home/soriadg/Documentos/PFsistemasDistribuidos/PFinal/New folder/report-service"
+cd "/ruta/a/PF_SD/report-service/report-service"
 java -jar target/report-service-0.0.1-SNAPSHOT.jar
 ```
 
@@ -238,7 +238,7 @@ Debería iniciar en: **http://localhost:8084**
 #### 7. WebInterface (Terminal 7)
 
 ```bash
-cd /home/soriadg/Documentos/PFsistemasDistribuidos/PFinal/web-interface
+cd /ruta/a/PF_SD/web-interface
 java -jar target/web-interface-0.0.1-SNAPSHOT.jar
 ```
 
@@ -265,6 +265,10 @@ curl http://localhost:8085
 ### Interfaz de Usuario
 
 **URL:** http://localhost:8085/index.html
+
+**Nota para despliegue remoto (GCP):**
+- `web-interface` sirve `config.js` con `APP_ACCOUNT_BASE_URL`, `APP_AUTH_BASE_URL`, `APP_REPORT_BASE_URL`.
+- `auth-service` usa `APP_CORS_ALLOWED_ORIGINS` para permitir el origen del frontend.
 
 #### Registro de Usuario
 
@@ -349,7 +353,7 @@ El simulador crea n clientes que realizan transacciones continuamente con h hilo
 ### Ejemplo de Ejecución
 
 ```bash
-cd /home/soriadg/Documentos/PFsistemasDistribuidos/PFinal/client-simulator
+cd /ruta/a/PF_SD/client-simulator
 
 # Simular 10 clientes con 4 hilos, $1000 iniciales, 30 transacciones/min
 java -jar target/client-simulator-1.0.0.jar 10 4 1000 30
@@ -373,7 +377,7 @@ El monitor muestra el uso de CPU de todos los servicios en una interfaz TUI.
 ### Ejemplo de Ejecución
 
 ```bash
-cd /home/soriadg/Documentos/PFsistemasDistribuidos/PFinal/cpu-monitor
+cd /ruta/a/PF_SD/cpu-monitor
 
 # Actualizar cada 3 segundos
 java -jar target/cpu-monitor-1.0.0.jar 3
@@ -446,11 +450,11 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 ```bash
 # Ver monto total del sistema (debe mantenerse constante)
-psql "host=127.0.0.1 port=5433 dbname=sfd user=app_user" \
+psql "host=127.0.0.1 port=5432 dbname=sfd user=app_user" \
   -c "SELECT SUM(saldo_banco + saldo_billetera) FROM cuentas;"
 
 # Ejecutar durante el simulador para verificar que no cambia
-watch -n 5 "psql 'host=127.0.0.1 port=5433 dbname=sfd user=app_user' \
+watch -n 5 "psql 'host=127.0.0.1 port=5432 dbname=sfd user=app_user' \
   -c 'SELECT SUM(saldo_banco + saldo_billetera) FROM cuentas;'"
 ```
 
@@ -461,14 +465,14 @@ Para ejecutar réplicas de AccountService y TransactionService:
 ### Segunda instancia de AccountService (Puerto 8090)
 
 ```bash
-cd /home/soriadg/Documentos/PFsistemasDistribuidos/PFinal/account-service
+cd /ruta/a/PF_SD/account-service
 SERVER_PORT=8090 java -jar target/account-service-0.0.1-SNAPSHOT.jar
 ```
 
 ### Segunda instancia de TransactionService
 
 ```bash
-cd "/home/soriadg/Documentos/PFsistemasDistribuidos/PFinal/New folder/transaction-service"
+cd "/ruta/a/PF_SD/transaction-service"
 java -jar target/transaction-service-0.0.1-SNAPSHOT.jar
 ```
 
@@ -482,7 +486,7 @@ Pub/Sub distribuirá automáticamente los mensajes entre las instancias.
 
 **Solución:**
 ```bash
-./cloud-sql-proxy --port 5433 sistemafinancierodistribuido:us-central1:sfd-db
+./cloud-sql-proxy --port 5432 sistemafinancierodistribuido:us-central1:sfd-db
 ```
 
 ### Error: Topic not found
@@ -555,15 +559,16 @@ kill -9 <PID>
 ## Arquitectura de Archivos
 
 ```
-PFinal/
+PF_SD/
 ├── schema.sql                      # Esquema de base de datos
 ├── INSTRUCCIONES.md               # Este archivo
 ├── auth-service/                  # Microservicio de autenticación
 ├── account-service/               # Microservicio de cuentas
 ├── audit-service/                 # Microservicio de auditoría
-├── New folder/
-│   ├── transaction-service/       # Procesamiento de transacciones
-│   └── report-service/           # Servicio de reportes
+├── transaction-service/          # Procesamiento de transacciones
+├── report-service/
+│   ├── report-service/           # Servicio de reportes
+│   └── transaction-service/      # Copia legacy (no usar)
 ├── web-interface/                # Interfaces web
 │   └── src/main/resources/static/
 │       ├── index.html            # Interfaz de usuario

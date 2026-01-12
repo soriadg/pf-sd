@@ -407,7 +407,7 @@ sleep 3
 # Verificar Cloud SQL Proxy
 ps aux | grep cloud-sql-proxy
 # Si no está corriendo:
-./cloud-sql-proxy --port 5432 sistemafinancierodistribuido:us-central1:sfd-postgres
+./cloud-sql-proxy --port 5432 sistemafinancierodistribuido:us-central1:sfd-db
 ```
 
 ### Servicios no inician

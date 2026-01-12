@@ -1,6 +1,7 @@
 // Configuration
-const REPORT_API = 'http://localhost:8084'; // ReportService
-const AUTH_BASE_URL = 'http://localhost:8081'; // AuthService
+const runtimeConfig = window.__CONFIG__ || {};
+const REPORT_API = runtimeConfig.REPORT_BASE_URL || 'http://localhost:8084'; // ReportService
+const AUTH_BASE_URL = runtimeConfig.AUTH_BASE_URL || 'http://localhost:8081'; // AuthService
 
 // State
 let adminToken = localStorage.getItem('adminToken');

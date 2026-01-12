@@ -6,7 +6,7 @@ LOG_DIR="$BASE_DIR/run-logs"
 PID_DIR="$BASE_DIR/run-pids"
 
 START_PROXY="${START_PROXY:-1}"
-PROXY_CONNECTION_NAME="${PROXY_CONNECTION_NAME:-sistemafinancierodistribuido:us-central1:sfd-postgres}"
+PROXY_CONNECTION_NAME="${PROXY_CONNECTION_NAME:-sistemafinancierodistribuido:us-central1:sfd-db}"
 PROXY_PORT="${PROXY_PORT:-5432}"
 
 DB_PORT="${DB_PORT:-5432}"
@@ -14,7 +14,10 @@ DB_NAME="${DB_NAME:-sfd}"
 DB_URL="${DB_URL:-jdbc:postgresql://127.0.0.1:${DB_PORT}/${DB_NAME}}"
 DB_USER="${DB_USER:-app_user}"
 DB_PASS="${DB_PASS:-123456789}"
-
+AUTH_PORT="${AUTH_PORT:-8081}"
+ACCOUNT_PORT="${ACCOUNT_PORT:-8080}"
+REPORT_PORT="${REPORT_PORT:-8084}"
+WEB_PORT="${WEB_PORT:-8085}"
 START_PROF_WEBSERVER="${START_PROF_WEBSERVER:-0}"
 PROF_WEBSERVER_PORT="${PROF_WEBSERVER_PORT:-8090}"
 
@@ -106,6 +109,7 @@ start_proxy() {
 start_service() {
   local name="$1"
   local dir="$2"
+  local port="${3:-}"
   local pid_file="$PID_DIR/$name.pid"
   local log_file="$LOG_DIR/$name.log"
   local jar
@@ -120,11 +124,20 @@ start_service() {
     return 1
   fi
 
+  local extra_env=()
+  if [ -n "$port" ]; then
+    extra_env+=("SERVER_PORT=$port")
+  fi
+  if [ "$name" = "transaction-service" ] || [ "$name" = "audit-service" ]; then
+    extra_env+=("SPRING_MAIN_WEB_APPLICATION_TYPE=none")
+  fi
+
   echo "Starting $name..."
   (cd "$dir" && nohup env \
     "SPRING_DATASOURCE_URL=$DB_URL" \
     "SPRING_DATASOURCE_USERNAME=$DB_USER" \
     "SPRING_DATASOURCE_PASSWORD=$DB_PASS" \
+    "${extra_env[@]}" \
     java -jar "$jar" > "$log_file" 2>&1 & echo $! > "$pid_file")
 }
 
@@ -198,12 +211,12 @@ start_all() {
     start_proxy || true
   fi
 
-  start_service "auth-service" "$BASE_DIR/auth-service"
-  start_service "account-service" "$BASE_DIR/account-service"
+  start_service "auth-service" "$BASE_DIR/auth-service" "$AUTH_PORT"
+  start_service "account-service" "$BASE_DIR/account-service" "$ACCOUNT_PORT"
   start_service "transaction-service" "$BASE_DIR/transaction-service"
   start_service "audit-service" "$BASE_DIR/audit-service"
-  start_service "report-service" "$BASE_DIR/report-service/report-service"
-  start_service "web-interface" "$BASE_DIR/web-interface"
+  start_service "report-service" "$BASE_DIR/report-service/report-service" "$REPORT_PORT"
+  start_service "web-interface" "$BASE_DIR/web-interface" "$WEB_PORT"
   if [ "$START_PROF_WEBSERVER" = "1" ]; then
     start_prof_webserver || true
   fi
