@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Financiero - Administrador</title>
+    <link rel="stylesheet" href="css/admin-style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Section -->
+        <div id="admin-auth-section" class="section">
+            <div class="card">
+                <h1>Panel de Administración</h1>
+                <div class="form-container">
+                    <h2>Acceso Administrativo</h2>
+                    <form onsubmit="adminLogin(event)">
+                        <div class="form-group">
+                            <label>CURP Administrador:</label>
+                            <input type="text" id="admin-curp" required maxlength="18" pattern="[A-Z0-9]{18}"
+                                   placeholder="CURP (18 caracteres)" style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña:</label>
+                            <input type="password" id="admin-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Ingresar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="admin-dashboard-section" class="section" style="display: none;">
+            <nav class="navbar">
+                <h1>Panel de Administración</h1>
+                <div class="user-info">
+                    <span id="admin-user-curp"></span>
+                    <button onclick="adminLogout()" class="btn btn-secondary">Cerrar Sesión</button>
+                </div>
+            </nav>
+
+            <div class="admin-dashboard">
+                <!-- Summary Cards -->
+                <div class="summary-section">
+                    <div class="summary-card">
+                        <h3>Usuarios Totales</h3>
+                        <p class="summary-value" id="total-users">0</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Transacciones Totales</h3>
+                        <p class="summary-value" id="total-transactions">0</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Monto Total en Sistema</h3>
+                        <p class="summary-value" id="total-money">$0.00</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Transacciones Hoy</h3>
+                        <p class="summary-value" id="today-transactions">0</p>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-section">
+                    <div class="card chart-card">
+                        <h2>Transacciones por Periodo</h2>
+                        <div class="time-filter">
+                            <button class="filter-btn active" onclick="changeTimeFilter('day')">Día</button>
+                            <button class="filter-btn" onclick="changeTimeFilter('week')">Semana</button>
+                            <button class="filter-btn" onclick="changeTimeFilter('month')">Mes</button>
+                        </div>
+                        <canvas id="transactionsChart"></canvas>
+                    </div>
+
+                    <div class="card chart-card">
+                        <h2>Monto de Transacciones</h2>
+                        <canvas id="amountChart"></canvas>
+                    </div>
+
+                    <div class="card chart-card">
+                        <h2>Distribución por Tipo</h2>
+                        <canvas id="typeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Users Section -->
+                <div class="users-section">
+                    <div class="card">
+                        <h2>Balances de Usuarios</h2>
+                        <button onclick="loadAllUsers()" class="btn btn-secondary">Actualizar</button>
+                        <div class="table-container">
+                            <table id="users-table">
+                                <thead>
+                                    <tr>
+                                        <th>CURP</th>
+                                        <th>Saldo Banco</th>
+                                        <th>Saldo Billetera</th>
+                                        <th>Saldo Total</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body">
+                                    <tr>
+                                        <td colspan="5" class="no-data">No hay datos</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Transactions Section -->
+                <div id="user-transactions-section" style="display: none;">
+                    <div class="card">
+                        <div class="section-header">
+                            <h2>Transacciones de: <span id="selected-user-curp"></span></h2>
+                            <button onclick="closeUserTransactions()" class="btn btn-secondary">Cerrar</button>
+                        </div>
+                        <div id="user-transactions-list" class="transactions-list">
+                            <p class="no-data">No hay transacciones</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- All Transactions Log -->
+                <div class="logs-section">
+                    <div class="card">
+                        <h2>Log de Todas las Transacciones</h2>
+                        <button onclick="loadAllTransactions()" class="btn btn-secondary">Actualizar</button>
+                        <div id="all-transactions-list" class="transactions-list">
+                            <p class="no-data">No hay transacciones</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Notification -->
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

@@ -28,15 +28,19 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 
 public class WebServer {
     private static final String TASK_ENDPOINT = "/task";
     private static final String STATUS_ENDPOINT = "/status";
+    private static final String CONFIG_ENDPOINT = "/config.js";
 
     private final int port;
     private HttpServer server;
@@ -67,9 +71,13 @@ public class WebServer {
 
         HttpContext statusContext = server.createContext(STATUS_ENDPOINT);
         HttpContext taskContext = server.createContext(TASK_ENDPOINT);
+        HttpContext configContext = server.createContext(CONFIG_ENDPOINT);
+        HttpContext staticContext = server.createContext("/");
 
         statusContext.setHandler(this::handleStatusCheckRequest);
         taskContext.setHandler(this::handleTaskRequest);
+        configContext.setHandler(this::handleConfigRequest);
+        staticContext.setHandler(this::handleStaticRequest);
 
         server.setExecutor(Executors.newFixedThreadPool(8));
         server.start();
@@ -129,11 +137,104 @@ public class WebServer {
         }
 
         String responseMessage = "El servidor está vivo\n";
-        sendResponse(responseMessage.getBytes(), exchange);
+        sendResponse(responseMessage.getBytes(StandardCharsets.UTF_8), exchange);
+    }
+
+    private void handleConfigRequest(HttpExchange exchange) throws IOException {
+        if (!exchange.getRequestMethod().equalsIgnoreCase("get")) {
+            exchange.close();
+            return;
+        }
+
+        String accountBase = getEnvOrDefault("APP_ACCOUNT_BASE_URL", "http://localhost:8080");
+        String authBase = getEnvOrDefault("APP_AUTH_BASE_URL", "http://localhost:8081");
+        String reportBase = getEnvOrDefault("APP_REPORT_BASE_URL", "http://localhost:8084");
+
+        String body = "window.__CONFIG__ = {\n" +
+                "  ACCOUNT_BASE_URL: " + toJsString(accountBase) + ",\n" +
+                "  AUTH_BASE_URL: " + toJsString(authBase) + ",\n" +
+                "  REPORT_BASE_URL: " + toJsString(reportBase) + "\n" +
+                "};\n";
+
+        sendResponse(body.getBytes(StandardCharsets.UTF_8), exchange, 200, "application/javascript; charset=utf-8");
+    }
+
+    private void handleStaticRequest(HttpExchange exchange) throws IOException {
+        if (!exchange.getRequestMethod().equalsIgnoreCase("get")) {
+            exchange.close();
+            return;
+        }
+
+        String path = exchange.getRequestURI().getPath();
+        if (path == null || path.isBlank() || "/".equals(path)) {
+            path = "/index.html";
+        }
+
+        if (path.contains("..")) {
+            sendResponse("Bad request\n".getBytes(StandardCharsets.UTF_8), exchange, 400, "text/plain; charset=utf-8");
+            return;
+        }
+
+        String resourcePath = "/static" + path;
+        try (InputStream input = WebServer.class.getResourceAsStream(resourcePath)) {
+            if (input == null) {
+                sendResponse("Not found\n".getBytes(StandardCharsets.UTF_8), exchange, 404, "text/plain; charset=utf-8");
+                return;
+            }
+
+            byte[] responseBytes = input.readAllBytes();
+            sendResponse(responseBytes, exchange, 200, contentTypeFor(path));
+        }
+    }
+
+    private String getEnvOrDefault(String key, String fallback) {
+        String value = System.getenv(key);
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        return value;
+    }
+
+    private String toJsString(String value) {
+        String escaped = value.replace("\\", "\\\\").replace("\"", "\\\"");
+        return "\"" + escaped + "\"";
+    }
+
+    private String contentTypeFor(String path) {
+        String lower = path.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(".html")) {
+            return "text/html; charset=utf-8";
+        }
+        if (lower.endsWith(".css")) {
+            return "text/css; charset=utf-8";
+        }
+        if (lower.endsWith(".js")) {
+            return "application/javascript; charset=utf-8";
+        }
+        if (lower.endsWith(".svg")) {
+            return "image/svg+xml";
+        }
+        if (lower.endsWith(".png")) {
+            return "image/png";
+        }
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+            return "image/jpeg";
+        }
+        if (lower.endsWith(".ico")) {
+            return "image/x-icon";
+        }
+        return "application/octet-stream";
     }
 
     private void sendResponse(byte[] responseBytes, HttpExchange exchange) throws IOException {
-        exchange.sendResponseHeaders(200, responseBytes.length);
+        sendResponse(responseBytes, exchange, 200, "text/plain; charset=utf-8");
+    }
+
+    private void sendResponse(byte[] responseBytes, HttpExchange exchange, int status, String contentType)
+            throws IOException {
+        Headers headers = exchange.getResponseHeaders();
+        headers.set("Content-Type", contentType);
+        exchange.sendResponseHeaders(status, responseBytes.length);
         OutputStream outputStream = exchange.getResponseBody();
         outputStream.write(responseBytes);
         outputStream.flush();
